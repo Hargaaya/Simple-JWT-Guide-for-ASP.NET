@@ -47,11 +47,11 @@ The JWT is created and signed once the client has provided sufficient login info
 
 #### Read more & Tools
 
-[Jwt.io](https://jwt.io/) - Allows you to decode, verify and generate JWT.
-[RFC7519](https://datatracker.ietf.org/doc/html/rfc7519) - Essentially the specification for JWT.
-[Stackoverflow](https://stackoverflow.com/questions/27301557/if-you-can-decode-jwt-how-are-they-secure) - If you can decode JWT, how are they secure?
-[Zalando Engineering](https://engineering.zalando.com/posts/2017/07/the-purpose-of-jwt-stateless-authentication.html) - The Purpose of JWT: Stateless Authentication
-[Owasp](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html#token-storage-on-client-side) - Token Storage on Client Side
+- [Jwt.io](https://jwt.io/) - Allows you to decode, verify and generate JWT.
+- [RFC7519](https://datatracker.ietf.org/doc/html/rfc7519) - Essentially the specification for JWT.
+- [Stackoverflow](https://stackoverflow.com/questions/27301557/if-you-can-decode-jwt-how-are-they-secure) - If you can decode JWT, how are they secure?
+- [Zalando Engineering](https://engineering.zalando.com/posts/2017/07/the-purpose-of-jwt-stateless-authentication.html) - The Purpose of JWT: Stateless Authentication
+- [Owasp](https://cheatsheetseries.owasp.org/cheatsheets/JSON_Web_Token_for_Java_Cheat_Sheet.html#token-storage-on-client-side) - Token Storage on Client Side
 
 ## How do I implement JWT into my ASP.NET Application?
 
@@ -123,11 +123,67 @@ public bool ValidateToken(string token)
     }
 ```
 
-These methods can be provided as a service for the application. Keep in mind that we can automatically authenticate JWT by adding an authentication handler to the framework's provided middleware.
+These methods can be provided as a service for the application. Keep in mind that we can automatically authenticate JWT by providing an authentication handler to the framework's provided middleware.
 
-[Stackoverflow](https://stackoverflow.com/questions/50012155/jwt-claim-names) - ClaimTypes v JwtRegisteredClaimNames
-[RFC7519 Sec. 4](https://datatracker.ietf.org/doc/html/rfc7519#section-4) - Issuer and Audience
+- [Stackoverflow](https://stackoverflow.com/questions/50012155/jwt-claim-names) - ClaimTypes v JwtRegisteredClaimNames
+- [RFC7519 Sec. 4](https://datatracker.ietf.org/doc/html/rfc7519#section-4) - Issuer and Audience
 
 ### Automatically Authenticating JWT
 
-To automatically authenticate JWT, we require an authentication handler to make use of the JWT that has been issued to clients. Thankfully, we can use the package _Microsoft.AspNetCore.Authentication.JwtBearer_ for this purpose.
+To automatically authenticate JWT, we require an authentication handler to make use of the JWT that has been issued to clients. Thankfully, we can use the package _Microsoft.AspNetCore.Authentication.JwtBearer_ for this purpose. By chaining AddJwtBearer onto the authenticationBuilder, we are providing the middleware with the tooling required to authenticate the JWT.
+
+```
+builder.Services.AddAuthentication((opt) =>
+{
+    opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer((opt) =>
+{
+    opt.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes("TheKeyRequiresAtLeast128bits")),
+        ValidateIssuer = false,
+        ValidateAudience = false,
+        ClockSkew = TimeSpan.Zero,
+    };
+});
+```
+
+- [Stackoverflow](https://stackoverflow.com/questions/48836688/what-exactly-is-useauthentication-for) - What exactly is UseAuthentication for?
+- [joonasw.net](https://joonasw.net/view/creating-auth-scheme-in-aspnet-core-2) - Creating an authentication scheme in ASP.NET Core 2.0 (In depth about schemes and handlers)
+
+### Swagger 😎
+
+As I mentioned before, the JWT is something that is stored by the client and sent along with each request. If you are using Swagger, you might want to add the code below to store and use the token in the correct manner. The code not only adds an interface for you to save the token but also adds it to the header for future HTTP requests.
+
+> Don't forget to add "Bearer" before the token.
+
+```
+builder.Services.AddSwaggerGen(opt =>
+{
+    opt.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        In = ParameterLocation.Header,
+        Description = "Please insert JWT into the field :)",
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+    });
+    opt.AddSecurityRequirement(new OpenApiSecurityRequirement {
+    {
+        new OpenApiSecurityScheme
+        {
+            Reference = new OpenApiReference
+            {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+            }
+        },
+        new string[] { }
+        }
+    });
+});
+```
+
+- [Stackoverflow](https://stackoverflow.com/questions/58179180/jwt-authentication-and-swagger-with-net-core-3-0) - Adding a Authorization header for swagger
