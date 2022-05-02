@@ -41,7 +41,7 @@ Hash(HS256) of Header + Payload + Secret Key 👉 42oWgS45G6zM0KxVyUbhqdXWIEwHdg
 
 ### How is JWT handled?
 
-The JWT is created and signed once the client has provided sufficient login information and is sent back to the client in the response. The token can now be stored by the client for future requests. The safest storage would be in-memory, but that doesn't persist, so sessionStorage along with fingerprints is the commonly used storage.
+The JWT is created and signed once the clients provided us with a correct username and password and is sent back to the client in the response. The token can now be stored by the client for future requests. The safest storage would be in-memory, but that doesn't persist, so sessionStorage along with fingerprints is the commonly used storage.
 
 ![Jwt handled](Images/jwtHandled.png)
 
